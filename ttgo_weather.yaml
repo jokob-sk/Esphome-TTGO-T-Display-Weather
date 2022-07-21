@@ -1,11 +1,22 @@
+substitutions:
+  device_name: "esp32display"
+  friendly_name: "ESP32 - display"
+
 esphome:
   name: ttgo_tdisplay_weather
   platform: ESP32
   board: nodemcu-32s
+  
+  
 
 wifi:
-  ssid: !secret WiFi_SSID
-  password: !secret WiFi_password
+  ssid: "secret"
+  password: "secretpwd"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esp32Display Fallback Hotspot"
+    password: "changethis"
   # manual_ip:
   #   static_ip: 172.16.0.81
   #   gateway: 172.16.0.1
@@ -127,8 +138,8 @@ display:
     dc_pin: GPIO16
     cs_pin: GPIO5
     backlight_pin: GPIO4
-    brightness: 25%
-    update_interval: 1s
+    brightness: 5%
+    update_interval: 10s
     lambda: |-
       it.set_rotation(DISPLAY_ROTATION_0_DEGREES);
       //Icon
@@ -194,7 +205,7 @@ display:
       else if (id(weather_condition).state == "exceptional")
       {
         //  it.image(5, 5, id(wpng_15)); // TODO: renable-when-RGB565-supported
-        it.printf(67, 5, id(font2),  0xF800, TextAlign::BASELINE_CENTER, "%s", id(weather_condition).state.c_str()); // TODO: remove-when-RGB565-supported
+        it.printf(67, 5, id(font2),  TextAlign::BASELINE_CENTER, "%s", id(weather_condition).state.c_str()); // TODO: remove-when-RGB565-supported
       }
       else
       {
@@ -203,34 +214,28 @@ display:
       //Temperature
       if (id(weather_temperature).has_state()) 
       {
-        it.printf(95, 180, id(font2),  0xFFFF, TextAlign::BASELINE_RIGHT, "%.0f", id(weather_temperature).state);
-        it.print(100, 124, id(font3), 0xFFFF, id(unit_of_measurement).state.c_str());
-      }
-      //  it.printf(100, 124, id(font3),  0xFFFF, "o");
-      //  it.printf(105, 174, id(font4),  0xFFFF, "F");
-      //  it.printf(105, 174, id(font4),  0xFFFF, "C");
-      // Syntax is always: it.print(<x>, <y>, <font>, [color=COLOR_ON], [align=TextAlign::TOP_LEFT], <text>);
-      // it.printf(100, 124, id(font3), 0xFFFF, TextAlign::TOP_LEFT, "%s", id(unit_of_measurement).state.c_str());
+       // it.printf(95, 180, id(font2),  0xFFFF, TextAlign::BASELINE_RIGHT, "%.0f", id(weather_temperature).state);
+       it.printf(95, 180, id(font2),  TextAlign::BASELINE_RIGHT, "%.0f", id(weather_temperature).state);
+       //it.print(100, 124, id(font3), id(unit_of_measurement).state.c_str());
+      }      
       
       if (id(weather_location).has_state()) 
       {
-        it.printf(67, 210, id(font5),  0xFFFF, TextAlign::BASELINE_CENTER, "%s", id(weather_location).state.c_str());
+        it.printf(67, 210, id(font5),  TextAlign::BASELINE_CENTER, "%s", id(weather_location).state.c_str());
       }
       //Time
-        it.strftime(67, 235, id(font1), 0x767E, TextAlign::BASELINE_CENTER, "%H:%M:%S", id(esptime).now());
+      it.strftime(67, 235, id(font1), TextAlign::BASELINE_CENTER, "%H:%M:%S", id(esptime).now());
 
-# We must create template variables within HA's sensors.yaml for:
-# - sensor.esphome_current_weather_condition
-# - sensor.esphome_current_weather_location
-# - sensor.esphome_current_weather_temperature
-# ESPHome doesn't support attributes so a template var for this is also needed
-# - sensor.esphome_current_weather_temperature_units
 
 sensor:
   - platform: homeassistant
     id: weather_temperature
-    entity_id: sensor.esphome_current_weather_temperature
-    internal: true
+    entity_id: sensor.openweathermap_feels_like_temperature
+    internal: true    
+  - platform: uptime
+    name: ${friendly_name} Uptime
+  - platform: wifi_signal
+    name: ${friendly_name} Signal Strength
 
 text_sensor:
   - platform: homeassistant
@@ -240,7 +245,7 @@ text_sensor:
 
   - platform: homeassistant
     id: weather_condition
-    entity_id: sensor.esphome_current_weather_condition
+    entity_id: sensor.openweathermap_condition
     internal: true
 
   - platform: homeassistant
@@ -253,42 +258,7 @@ switch:
     pin: GPIO4
     name: "Backlight"
     id: backlight
-  # - platform: template
-  #   name: "Screen Backlight"
-  #   lambda: |-
-  #     if (id(st7789vdisplay).get_backlight()) {
-  #       return true;
-  #     } else {
-  #       return false;
-  #     }
-  #   turn_on_action:
-  #       lambda: |-
-  #         id(st7789vdisplay).backlight (true);
-  #   turn_off_action:
-  #       lambda: |-
-  #         id(st7789vdisplay).backlight (false);
 
-# binary_sensor:
-  # - platform: gpio
-  #   pin: 
-  #     number: 0
-  #     inverted: True
-  #     mode: INPUT_PULLUP
-  #   name: left_button
-  #   on_click:
-  #     then: 
-  #       lambda: |-
-  #         id(st7789vdisplay).backlight (false);
-  # - platform: gpio
-  #   pin: 
-  #     number: 35
-  #     inverted: True
-  #     mode: INPUT_PULLUP
-  #   name: right_button
-  #   on_click:
-  #     then: 
-  #       lambda: |-
-  #         id(st7789vdisplay).backlight (true);
 time:
   - platform: homeassistant
     id: esptime

@@ -1,9 +1,9 @@
-sensors:
-- platform: template
-  sensors:
-    curent_temp:
-       value_template: "{{ state_attr('weather.openweathermap','temperature') | round(0) }}"
-       friendly_name: "curent temperature"
-    curent_weather:
-      value_template: "{{ states('weather.openweathermap') | default('Unknown') }}"
-      friendly_name: "curent weather"
+    #TTGO display variables
+  - platform: template
+    sensors:
+        current_temp:
+           value_template: "{{ state_attr('weather.openweathermap','temperature') | round(0) }}"
+           friendly_name: "current temperature"
+        current_weather:
+          value_template: "{{ states('weather.openweathermap') | default('Unknown') }}"
+          friendly_name: "current weather"

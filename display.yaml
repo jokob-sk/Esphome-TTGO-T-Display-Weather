@@ -1,0 +1,139 @@
+substitutions:
+  device_name: "esp32display"
+  friendly_name: "ESP32 - display"
+
+esphome:
+  name: esp32display
+
+
+esp32:
+  board: ttgo-t1
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+  level: debug
+
+# Enable Home Assistant API
+api:
+
+ota:
+
+web_server:
+  port: 80
+
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO19
+
+time:
+  - platform: homeassistant
+    id: esptime
+
+sensor:
+  - platform: uptime
+    name: ${friendly_name} Uptime
+
+  - platform: wifi_signal
+    name: ${friendly_name} Signal Strength
+
+wifi:
+  ssid: "secret"
+  password: "secretpwd"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esp32Display Fallback Hotspot"
+    password: "changethis"
+
+captive_portal:
+
+#fonts (folder 'fonts')
+font:
+  - file: fonts/slkscr.ttf
+    id: font1
+    size: 24
+
+#Icons (folder 'images')
+image:
+  - file: "images/LAMP_ON.png"
+    id: lamp_on
+    type: RGB565
+  - file: "images/LAMP_OFF.png"
+    id: lamp_off
+    type: RGB565
+  - file: "images/wifi_24x24.png"
+    id: wifi_img
+    type: RGB565
+  - file: "images/ha_24x24.png"
+    id: ha_img
+    type: RGB565
+
+display:
+  #based on https://github.com/musk95/esphome
+  - platform: st7789v
+    id: st7789vdisplay
+    reset_pin: GPIO23
+    dc_pin: GPIO16
+    cs_pin: GPIO5
+    backlight_pin: GPIO4
+    brightness: 25%
+    update_interval: 5s
+    lambda: |-
+      it.set_rotation(DISPLAY_ROTATION_0_DEGREES);
+      //Spacer
+      it.filled_rectangle (5,205,125,3,0xFFFF);
+      //Time
+      it.strftime(3, 235, id(font1), 0xFFFF, TextAlign::BASELINE_LEFT, "%H:%M", id(esptime).now());
+      //it.printf (120, 215, id(font1), 0xFE60,"%i",id(last_remote));
+      //Status Icons
+      if (id(WiFi1).is_connected ()) {
+        it.image(80, 216, id(wifi_img));
+      }
+      if (id(api1).is_connected ()) {
+        it.image(110, 216, id(ha_img));
+      }
+
+
+# LOCAL BUTTONS
+# backlight off
+  - platform: gpio
+    pin: 
+      number: 0
+      inverted: True
+      mode: INPUT_PULLUP
+    name: left_button
+    on_click:
+      then: 
+        lambda: |-
+          id(st7789vdisplay).backlight (false);
+# backlight on
+  - platform: gpio
+    pin: 
+      number: 35
+      inverted: True
+      mode: INPUT_PULLUP
+    name: right_button
+    on_click:
+      then: 
+        lambda: |-
+          id(st7789vdisplay).backlight (true);
+switch:
+  - platform: template
+    id: sw_backlight
+    name: "Screen Backlight"
+    lambda: |-
+      if (id(st7789vdisplay).get_backlight()) {
+        return true;
+      } else {
+        return false;
+      }
+    turn_on_action:
+        lambda: |-
+          id(st7789vdisplay).backlight (true);
+    turn_off_action:
+        lambda: |-
+          id(st7789vdisplay).backlight (false);
+
+    
